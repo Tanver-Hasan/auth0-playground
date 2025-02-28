@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logged Out</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            font-size: 18px;
+        }
+        .button-container {
+            margin-top: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .home-btn {
+            background-color: #007bff;
+        }
+        .login-btn {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Logout Successful</h1>
+        <p><%= message %></p>
+
+        <div class="button-container">
+            <a href="/" class="btn home-btn">Go to Home</a>
+            <a href="/login" class="btn login-btn">Login Again</a>
+        </div>
+    </div>
+
+</body>
+</html>

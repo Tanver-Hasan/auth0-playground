@@ -1,35 +1,24 @@
-require('dotenv').config()
+
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+const dotenv = require('dotenv');
 const express = require("express");
 const session = require('express-session');
-const port = process.env.PORT || 3000;
-const jwt = require('jsonwebtoken');
 const path = require('path');
 const helmet = require('helmet');
-const { check,validationResult } = require('express-validator');
-const app = express();
 const crypto = require('crypto');
+const fs= require('fs');
+const logger= require("./src/logger/logger");
+const { auth, requiresAuth } = require("express-openid-connect");
+const MemoryStore = require('memorystore')(auth);
+const authRoutes = require("./src/routes/auth/auth");
+const progressiveProfilingRoutes = require("./src/routes/progressive_profiling/progressive_profiling");
+dotenv.config();
 
-app.use((req, res, next) => {
-    res.locals.nonce = crypto.randomBytes(16).toString('base64');
-    next();
-});
-
-app.use(
-    helmet({
-        contentSecurityPolicy: {
-            directives: {
-                defaultSrc: ["'self'"],
-                // Allow inline scripts only if they have the correct nonce
-                scriptSrc: [
-                    "'self'",
-                    (req, res) => `'nonce-${res.locals.nonce}'`
-                ],
-                formAction: ["'self'", "https://login.tanverhasan.com"]
-            }
-        }
-    })
-);
-
+const port = process.env.PORT || 3000;
+const app = express();
+app.set('trust proxy', true);
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'))
 
 app.use(express.urlencoded({ extended: true }))
 
@@ -44,113 +33,142 @@ app.use(
     })
 );
 
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'))
 
-app.get('/progressive-profiling', (req, res) => {
-    const { state, session_token } = req.query;
-    console.log(" Auth0 State Param " + state);
-    console.log("Session Token " + session_token);
-
-    if (state) {
-        req.session.state = state;
-    }
+app.use((req, res, next) => {
+    res.locals.nonce = crypto.randomBytes(16).toString('base64');
+    next();
+});
 
 
-    try {
-        const decoded = jwt.verify(session_token, process.env.SESSION_SECRET, {
-            issuer: 'login.tanverhasan.com',
-            algorithms: 'HS256'
-        });
-        console.log(decoded);
-        req.session.tokenContent = decoded;
-
-    } catch (err) {
-        return res.status(400).send('Invalid session token');
-    }
-
-    res.render("ProgressiveProfilingPage", { nonce: res.locals.nonce })
-})
-
-// app.post('/progressive-profiling', (req, res) => {
-//     const { firstName, lastName } = req.body;
-//     req.session.firstName = firstName;
-//     req.session.lastName = lastName;
-
-//     const state = req.session.state || '';
-
-//     var session_token = jwt.sign({ first_name: firstName, last_name:lastName }, 'secret');
-
-
-//     console.log("Parsed State Param before redirection " + state);
-//     if (!state) {
-//         res.send("Something went wrong ");
-//     }
-//     const redirectUlr = `https://login.tanverhasan.com/continue?state=${state}`;
-//     res.redirect(302, redirectUlr);
-
-// })
-
-app.post('/progressive-profiling',
-    [check('firstName').trim().escape(),
-    check('lastName').trim().escape()],
-    (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                // Allow inline scripts only if they have the correct nonce
+                scriptSrc: [
+                    "'self'",
+                    (req, res) => `'nonce-${res.locals.nonce}'`
+                ],
+                formAction: ["'self'", `https://${process.env.AUTH0_DOMAIN}`]
+            }
         }
-        const { firstName, lastName } = req.body;
+    })
+);
 
-        const state = req.session.state || '';
-        const origin = req.protocol + '://' + req.get('host');
+app.use((req, res, next) => {
+    logger.info(`Received a ${req.method} request for ${req.url}`);
+    next();
+});
 
-        // Generate a token that includes first and last name and state
-        const session_token = jwt.sign(
-            { sub: req.session.tokenContent.sub, iss: origin, first_name: firstName, last_name: lastName, state: state },
-            process.env.SESSION_SECRET, {
-            algorithm: 'HS256',
-            expiresIn: '1m'
-        }
-        );
+app.use(auth({
+    idpLogout: true,
+    authRequired: false,
+    routes: {
+        login: false,
+        postLogoutRedirect: 'custom-logout',
+        callback: false
+    },
 
-        console.log("Signred JWT token " + session_token);
+    baseURL: process.env.BASE_URL,
+    clientID: process.env.AUTH0_CLIENT_ID,
+    clientSecret: process.env.AUTH0_CLIENT_SECRET,
+    issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}`,
+    secret: process.env.SECRET,
+    authorizationParams: {
+        response_type: 'code',
+        audience: process.env.API_AUDIENCE,
+        scope: 'openid profile email offline_access',
+    },
 
-        if (!session_token) {
-            return res.send("Something went wrong");
-        }
-        const continueURL = req.session.tokenContent.continue_uri;
+    session: {
+        store: new MemoryStore({
+            checkPeriod: 24 * 60 * 1000
+        })
+    },
+    backchannelLogout: true
+}));
 
-        // Instead of redirecting via GET, we respond with an HTML page that auto-submits a POST request.
-        const continueUrl = `${continueURL}?state=${state}`;
-        //const continueUrl = `https://login.tanverhasan.com/continue`;
-        const htmlForm = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Redirecting...</title>
-        <script nonce="${res.locals.nonce}">
-          window.onload = function() {
-            document.forms[0].submit();
-          };
-        </script>
-      </head>
-      <body>
-        <form method="POST" action="${continueUrl}">
-          <input type="hidden" name="state" value="${state}" />
-          <input type="hidden" name="session_token" value="${session_token}" />
-          <noscript>
-            <button type="submit">Continue</button>
-          </noscript>
-        </form>
-      </body>
-    </html>
-  `;
-        res.send(htmlForm);
+
+
+// Home Page
+app.get('/', (req, res) => {
+    logger.info("Home Page ")
+    res.render('Home', {
+        isAuthenticated: req.oidc.isAuthenticated(),
+        user: req.oidc.user
     });
-
-
-
-app.listen(port, () => {
-    console.log(`Server Listening On http://localhost:${port}`);
 })
+
+app.use("/",authRoutes);
+
+
+
+// Token Page
+app.get('/token', requiresAuth(), (req, res) => {
+    res.render('Token', {
+        accessToken: req.oidc.accessToken.access_token,
+        idToken: req.oidc.idToken,
+        refreshToken: req.oidc.refreshToken
+    })
+});
+
+// Profile Page
+app.get('/profile', requiresAuth(), (req, res) => {
+    res.render('Profile', { user: req.oidc.user })
+});
+
+app.use("/",progressiveProfilingRoutes);
+
+// Catch 404 and forward to error handler
+app.use(function (req, res, next) {
+    const err = new Error('Not Found');
+    err.status = 404;
+    next(err);
+});
+
+// error handlers
+// development error handler
+// will print stacktrace
+if (app.get("env") === "development") {
+    app.use((err, req, res) => {
+        logger.error(`Error occurred: ${err.message}`);
+        res.status(err.status || 500);
+        res.render("error", {
+            message: err.message,
+            error: err,
+        });
+    });
+}
+
+// production error handler
+// no stacktraces leaked to user
+app.use((err, req, res) => {
+    logger.error(`Error occurred: ${err.message}`);
+    res.status(err.status || 500);
+    res.render("error", {
+        message: err.message,
+        error: {},
+    });
+});
+
+const isDevelopment = process.env.NODE_ENV === "development";
+
+if (isDevelopment) {
+    // Load SSL Certificates (For Development Only)
+    const https = require("https");
+    const options = {
+        key: fs.readFileSync("server.key"),
+        cert: fs.readFileSync("server.cert"),
+    };
+
+    // Start Express with HTTPS
+    https.createServer(options, app).listen(port, () => {
+        logger.info(`[Development] HTTPS Server running at https://localhost:${port}`);
+    });
+} else {
+    // Start Express with HTTP
+    app.listen(port, (req,res) => {
+        logger.info(`[Production] HTTP Server Statrted`);
+    });
+}
