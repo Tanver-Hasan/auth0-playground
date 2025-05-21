@@ -2,7 +2,6 @@
 const express = require("express");
 const logger = require("../../logger/logger"); 
 const router = express.Router();
-const { requiresAuth } = require("express-openid-connect");
 
 router.get('/login', (req, res) => {
     logger.info("Login Request Query Params:", JSON.stringify(req.query));
@@ -13,6 +12,7 @@ router.get('/login', (req, res) => {
         ...(invitation && { invitation }),
         ...(organization && { organization }),
         ...(organization_name && { organization_name }),
+         connection: process.env.CONNECTION ?? ""
     }
     
     // Authorization Code Flow /authorize?response_type=code

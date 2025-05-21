@@ -1,9 +1,9 @@
 
 const express = require("express");
-const logger = require("../../logger/logger"); // Import logger
+const router = express.Router();
+const logger = require("../../logger/logger"); 
 const jwt = require('jsonwebtoken');
 const { check, validationResult } = require('express-validator');
-const router = express.Router();
 
 router.get('/progressive-profiling', (req, res) => {
     const { state, session_token } = req.query;

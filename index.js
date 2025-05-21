@@ -11,6 +11,7 @@ const logger= require("./src/logger/logger");
 const { auth, requiresAuth } = require("express-openid-connect");
 const MemoryStore = require('memorystore')(auth);
 const authRoutes = require("./src/routes/auth/auth");
+const licensAndAgreementRoutes=require("./src/routes/licenseAndAgreement/license_agreement")
 const progressiveProfilingRoutes = require("./src/routes/progressive_profiling/progressive_profiling");
 dotenv.config();
 
@@ -101,8 +102,8 @@ app.get('/', (req, res) => {
 })
 
 app.use("/",authRoutes);
-
-
+app.use("/",licensAndAgreementRoutes);
+app.use("/",progressiveProfilingRoutes);
 
 // Token Page
 app.get('/token', requiresAuth(), (req, res) => {
@@ -118,7 +119,7 @@ app.get('/profile', requiresAuth(), (req, res) => {
     res.render('Profile', { user: req.oidc.user })
 });
 
-app.use("/",progressiveProfilingRoutes);
+
 
 // Catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -168,7 +169,9 @@ if (isDevelopment) {
     });
 } else {
     // Start Express with HTTP
-    app.listen(port, (req,res) => {
+    app.listen(port, () => {
         logger.info(`[Production] HTTP Server Statrted`);
     });
 }
+
+module.exports=app;
