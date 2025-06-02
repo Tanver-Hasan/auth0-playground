@@ -6,13 +6,14 @@ const session = require('express-session');
 const path = require('path');
 const helmet = require('helmet');
 const crypto = require('crypto');
-const fs= require('fs');
-const logger= require("./src/logger/logger");
+const fs = require('fs');
+const logger = require("./src/logger/logger");
 const { auth, requiresAuth } = require("express-openid-connect");
 const MemoryStore = require('memorystore')(auth);
 const authRoutes = require("./src/routes/auth/auth");
-const licensAndAgreementRoutes=require("./src/routes/licenseAndAgreement/license_agreement")
+const licensAndAgreementRoutes = require("./src/routes/licenseAndAgreement/license_agreement")
 const progressiveProfilingRoutes = require("./src/routes/progressive_profiling/progressive_profiling");
+const eventStreamRoutes = require("./src/routes/event_stream/event_webhook");
 dotenv.config();
 
 const port = process.env.PORT || 3000;
@@ -21,6 +22,7 @@ app.set('trust proxy', true);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'))
 
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
 
 app.use(
@@ -63,7 +65,7 @@ app.use((req, res, next) => {
 });
 
 app.use(auth({
-    idpLogout: true,
+    idpLogout: false,
     authRequired: false,
     routes: {
         login: false,
@@ -101,9 +103,10 @@ app.get('/', (req, res) => {
     });
 })
 
-app.use("/",authRoutes);
-app.use("/",licensAndAgreementRoutes);
-app.use("/",progressiveProfilingRoutes);
+app.use("/", authRoutes);
+app.use("/", licensAndAgreementRoutes);
+app.use("/", progressiveProfilingRoutes);
+app.use("/", eventStreamRoutes);
 
 // Token Page
 app.get('/token', requiresAuth(), (req, res) => {
@@ -154,8 +157,8 @@ app.use((err, req, res) => {
 });
 
 const isDevelopment = process.env.NODE_ENV === "development";
-
-if (isDevelopment) {
+const isLocal = !process.env.VERCEL && process.env.NODE_ENV === "development";
+if (isLocal) {
     // Load SSL Certificates (For Development Only)
     const https = require("https");
     const options = {
@@ -168,10 +171,10 @@ if (isDevelopment) {
         logger.info(`[Development] HTTPS Server running at https://localhost:${port}`);
     });
 } else {
-    // Start Express with HTTP
+    //Start Express with HTTP
     app.listen(port, () => {
         logger.info(`[Production] HTTP Server Statrted`);
     });
 }
 
-module.exports=app;
+module.exports = app;

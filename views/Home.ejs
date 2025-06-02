@@ -48,7 +48,8 @@
             <p>Hello, <strong><%= user.name %></strong>!</p>
             <a href="/profile"><button class="profile">Profile</button></a>
             <a href="/token"><button class="token">Tokens</button></a>
-            <a href="/silent-auth"><button class="token">Silent Authentication (Prompt=none)</button></a>
+            <a href="/login"><button class="token">Interactive Login (/authorize)</button></a>
+            <a href="/silent-auth"><button class="token">Silent Authentication (/authorize?prompt=none)</button></a>
             <a href="/refresh-token"><button class="token">Refresh Token (/oauth/token)</button></a>
             <a href="/logout"><button class="logout">Logout</button></a>
         <% } else { %>

@@ -3,20 +3,21 @@ const router = express.Router();
 const logger = require("../../logger/logger");
 
 
-router.get("/license", (req,res)=>{    
+router.get("/event-stream", (req,res)=>{
     console.log("Auth header:", req.headers.authorization);
     console.log("Session info:", req.session);
     console.log("OIDC object:", req.oidc);
-    res.render("LicenseAndAgreement");
+    res.send("Auth0 Webhook Listener Running");
 
 })
 
-router.post("/license", (req,res)=>{
+router.post("/event-stream", (req,res)=>{
     console.log("Auth header:", req.headers.authorization);
     console.log("Session info:", req.session);
     console.log("OIDC object:", req.oidc);
-    logger.info("License Updated");
-    res.redirect("/")
+    console.log("Webhook received:", req.body);
+    logger.info("Event Stream Post endpoint");
+    res.status(200).send("Event received");
 })
 
 module.exports = router;

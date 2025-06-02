@@ -5,15 +5,16 @@ const router = express.Router();
 
 router.get('/login', (req, res) => {
     logger.info("Login Request Query Params:", JSON.stringify(req.query));
-    const { session_token, invitation, organization, organization_name } = req.query;
-    let authorizationParams = {
+    const { session_transfer_token, invitation, organization, organization_name } = req.query;
+
+    const authorizationParams = {
         redirect_uri: process.env.AUTH0_CALLBACK_URL,
-        ...(session_token && { session_token }),
+        ...(session_transfer_token && { session_transfer_token }),
         ...(invitation && { invitation }),
         ...(organization && { organization }),
         ...(organization_name && { organization_name }),
-         connection: process.env.CONNECTION ?? ""
-    }
+        connection: process.env.CONNECTION || ""
+    };
     
     // Authorization Code Flow /authorize?response_type=code
     res.oidc.login({
@@ -22,6 +23,7 @@ router.get('/login', (req, res) => {
     })
   }
 );
+
 
 router.get('/silent-auth', (req, res) => {
     logger.info("Silent Authentication");
@@ -74,3 +76,5 @@ router.post('/callback', express.urlencoded({ extended: false }), (req, res) =>
 
 
 module.exports = router;
+
+
