@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Decode JWT</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 1000px; margin: auto; }
+    textarea { width: 100%; padding: 10px; margin-bottom: 10px; }
+    button { padding: 10px 15px; background: #007bff; color: #fff; border: none; cursor: pointer; }
+    button:disabled { background: #ccc; }
+    pre { background: #f9f9f9; padding: 10px; white-space: pre-wrap; word-break: break-word; }
+    .error { color: red; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; vertical-align: top; }
+    .info-box { margin-top: 20px; background: #e9f5ff; padding: 15px; border-radius: 5px; }
+    a { color: #007bff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h1>JWT Decoder</h1>
+
+  <% if (errorMessage) { %>
+    <div class="error"><%= errorMessage %></div>
+  <% } %>
+
+  <form method="POST" action="/decode-jwt">
+    <textarea name="token" rows="8" placeholder="Enter JWT token here"><%= sampleToken %></textarea>
+    <br />
+    <button type="submit">Decode JWT</button>
+  </form>
+
+  <% if (decoded) { %>
+    <h2>Decoded JWT</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Part</th>
+          <th>Content</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Header</td>
+          <td><pre><%= JSON.stringify(decoded.header, null, 2) %></pre></td>
+        </tr>
+        <tr>
+          <td>Payload</td>
+          <td><pre><%= JSON.stringify(decoded.payload, null, 2) %></pre></td>
+        </tr>
+        <tr>
+          <td>Signature</td>
+          <td><pre><%= decoded.signature %></pre></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <% if (discoveryUrl && jwksUrl) { %>
+      <div class="info-box">
+        <h3>OIDC Discovery and JWKS Endpoints</h3>
+        <p><strong>Discovery:</strong> <a href="<%= discoveryUrl %>" target="_blank"><%= discoveryUrl %></a></p>
+        <p><strong>JWKS:</strong> <a href="<%= jwksUrl %>" target="_blank"><%= jwksUrl %></a></p>
+      </div>
+    <% } %>
+  <% } %>
+</body>
+</html>

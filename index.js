@@ -14,6 +14,7 @@ const authRoutes = require("./src/routes/auth/auth");
 const licensAndAgreementRoutes = require("./src/routes/licenseAndAgreement/license_agreement")
 const progressiveProfilingRoutes = require("./src/routes/progressive_profiling/progressive_profiling");
 const eventStreamRoutes = require("./src/routes/event_stream/event_webhook");
+const tools =require("./src/routes/tool/tool");
 dotenv.config();
 
 const port = process.env.PORT || 3000;
@@ -107,6 +108,7 @@ app.use("/", authRoutes);
 app.use("/", licensAndAgreementRoutes);
 app.use("/", progressiveProfilingRoutes);
 app.use("/", eventStreamRoutes);
+app.use("/", tools);
 
 // Token Page
 app.get('/token', requiresAuth(), (req, res) => {

@@ -1,6 +1,6 @@
 
 const express = require("express");
-const logger = require("../../logger/logger"); 
+const logger = require("../../logger/logger");
 const router = express.Router();
 
 router.get('/login', (req, res) => {
@@ -15,13 +15,13 @@ router.get('/login', (req, res) => {
         ...(organization_name && { organization_name }),
         connection: process.env.CONNECTION || ""
     };
-    
+
     // Authorization Code Flow /authorize?response_type=code
     res.oidc.login({
         returnTo: '/profile',
         authorizationParams
     })
-  }
+}
 );
 
 
@@ -36,7 +36,7 @@ router.get('/silent-auth', (req, res) => {
         returnTo: '/profile',
         authorizationParams
     })
-  }
+}
 );
 
 router.get('/refresh-token', async (req, res) => {
@@ -44,14 +44,14 @@ router.get('/refresh-token', async (req, res) => {
     logger.info("Refresh Token");
     let access_token = req.oidc.accessToken;
     const tokens = await access_token.refresh();
-    if(tokens){
+    if (tokens) {
         logger.info(JSON.stringify(tokens));
         res.render('Home', {
             isAuthenticated: req.oidc.isAuthenticated(),
             user: req.oidc.user
         });
     }
-  }
+}
 );
 
 router.get('/custom-logout', (req, res) => {
@@ -60,12 +60,22 @@ router.get('/custom-logout', (req, res) => {
 
 
 router.get('/callback', (req, res) => {
-    logger.info(JSON.stringify(req.query));
+    logger.info("Callback query params:", JSON.stringify(req.query));
+
+    const { error, error_description } = req.query;
+  
+    if (error) {
+        logger.error(`OIDC callback error: ${error} - ${error_description}`);
+        return res.status(400).render('auth-error', {
+          error,
+          error_description,
+        });
+      }
+
     res.oidc.callback({
-        redirectUri:process.env.AUTH0_CALLBACK_URL,
+        redirectUri: process.env.AUTH0_CALLBACK_URL,
     })
-}
-);
+});
 
 router.post('/callback', express.urlencoded({ extended: false }), (req, res) =>
     res.oidc.callback({

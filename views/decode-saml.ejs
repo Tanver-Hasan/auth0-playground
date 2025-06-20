@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Decode SAML</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 1000px; margin: auto; }
+    textarea { width: 100%; padding: 10px; margin-bottom: 10px; }
+    pre { background: #f9f9f9; padding: 10px; white-space: pre-wrap; word-break: break-word; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    .error { color: red; margin-bottom: 10px; }
+    button { padding: 10px 15px; background: #007bff; color: #fff; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>SAML Decoder</h1>
+
+  <% if (errorMessage) { %>
+    <div class="error"><%= errorMessage %></div>
+  <% } %>
+
+  <form method="POST" action="/decode-saml">
+    <textarea name="samlRequestOrResponse" rows="15" placeholder="Paste SAML Response or Request here..."><%= sampleSaml %></textarea>
+    <br />
+    <button type="submit">Decode SAML</button>
+  </form>
+
+  <% if (xmlString) { %>
+    <h2>Decoded SAML (Formatted XML)</h2>
+    <pre><%= xmlString %></pre>
+  <% } %>
+
+  <% if (attributes.length > 0) { %>
+    <h2>SAML Attributes</h2>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <% attributes.forEach(attr => { %>
+          <tr>
+            <td><%= attr.name %></td>
+            <td><%= attr.value %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</body>
+</html>
