@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bcrypt Password Hash Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        textarea,
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .error {
+            color: red;
+            margin-bottom: 10px;
+        }
+
+        .result {
+            margin-top: 20px;
+            background: #f1f1f1;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            word-wrap: break-word;
+        }
+
+        .section {
+            margin-top: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Bcrypt Password Hash Generator</h1>
+
+        <div class="section">
+            <h2>Generate Hash</h2>
+            <form method="POST" action="/hash-bcrypt">
+                <% if (errorMessage) { %>
+                    <div class="error">
+                        <%= errorMessage %>
+                    </div>
+                    <% } %>
+
+                        <label for="password">Password</label>
+                        <input type="text" name="password" id="password" placeholder="Enter password..."
+                            value="<%= samplePassword || '' %>">
+
+                        <label for="saltRounds">Salt Rounds</label>
+                        <input type="number" name="saltRounds" id="saltRounds" placeholder="e.g. 10"
+                            value="<%= saltRounds || '' %>">
+
+                        <button type="submit">Generate Hash</button>
+
+                        <% if (hash) { %>
+                            <div class="result">
+                                <%= hash %>
+                            </div>
+                            <% } %>
+            </form>
+        </div>
+
+        <!-- Verify Hash Section -->
+        <div class="section">
+            <h2>Verify Password Against Hash</h2>
+            <form method="POST" action="/verify-bcrypt">
+                <% if (verifyError) { %>
+                    <div class="error">
+                        <%= verifyError %>
+                    </div>
+                    <% } %>
+
+                        <label for="verifyPassword">Password</label>
+                        <input type="text" name="verifyPassword" id="verifyPassword"
+                            placeholder="Enter password to verify..." value="<%= verifyPassword || '' %>">
+
+                        <label for="verifyHash">Existing Bcrypt Hash</label>
+                        <textarea name="verifyHash" id="verifyHash" rows="3"
+                            placeholder="$2b$10$..."><%= verifyHash || '' %></textarea>
+
+                        <button type="submit">Verify</button>
+
+                        <% if (typeof verifyResult !=='undefined' ) { %>
+                            <div class="result">
+                                Verification result: <strong>
+                                    <%= verifyResult ? 'MATCH ✅' : 'NO MATCH ❌' %>
+                                </strong>
+                            </div>
+                            <% } %>
+            </form>
+        </div>
+
+        <!-- Technical Details -->
+        <div class="section">
+            <div class="mt-8 p-4 bg-gray-100 rounded-lg shadow">
+                <h3 class="text-lg font-semibold text-blue-600">Technical Insights into Bcrypt</h3>
+                <p class="mt-2 text-gray-700">
+                    Bcrypt is a password-hashing function designed to be computationally intensive, making brute-force
+                    attacks slower and more difficult.
+                </p>
+                <ul class="list-disc list-inside mt-2 text-gray-700">
+                    <li><strong>Salt Rounds:</strong> Determines how many iterations of the hashing algorithm are
+                        applied. Higher values are slower but more secure.</li>
+                    <li><strong>Automatic Salting:</strong> Bcrypt generates a random salt internally for each hash.
+                    </li>
+                    <li><strong>Security Benefit:</strong> Even if two users have the same password, their hashes will
+                        differ due to unique salts.</li>
+                    <li><strong>Verification:</strong> To check a password, bcrypt re-applies the same process with the
+                        stored salt.</li>
+                </ul>
+                <p class="mt-4 text-gray-700">
+                    Choosing the right salt rounds is a balance between performance and security.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

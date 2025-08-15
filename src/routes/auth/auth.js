@@ -5,7 +5,14 @@ const router = express.Router();
 
 router.get('/login', (req, res) => {
     logger.info("Login Request Query Params:", JSON.stringify(req.query));
-    const { session_transfer_token, invitation, organization, organization_name } = req.query;
+
+    const {
+        session_transfer_token,
+        invitation,
+        organization,
+        organization_name,
+        'ext-manage-profile': extManageProfile // fixing invalid variable name
+    } = req.query;
 
     const authorizationParams = {
         redirect_uri: process.env.AUTH0_CALLBACK_URL,
@@ -13,6 +20,7 @@ router.get('/login', (req, res) => {
         ...(invitation && { invitation }),
         ...(organization && { organization }),
         ...(organization_name && { organization_name }),
+        ...(extManageProfile && { 'ext-manage-profile': extManageProfile }),
         connection: process.env.CONNECTION || ""
     };
 
@@ -20,9 +28,9 @@ router.get('/login', (req, res) => {
     res.oidc.login({
         returnTo: '/profile',
         authorizationParams
-    })
-}
-);
+    });
+});
+
 
 
 router.get('/silent-auth', (req, res) => {

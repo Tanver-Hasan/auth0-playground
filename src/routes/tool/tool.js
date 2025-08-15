@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt'); 
 const router = express.Router();
 const logger = require('../../logger/logger');
 const { parseStringPromise } = require('xml2js'); 
@@ -252,6 +253,104 @@ router.post('/encode-base64', (req, res) => {
     renderBase64(res, {
       encodeInput: input,
       encodeError: 'Encoding failed'
+    });
+  }
+});
+
+
+
+function renderBcrypt(res, data) {
+  // Ensure all expected keys exist so the EJS never breaks
+  const defaultModel = {
+    samplePassword: '',
+    saltRounds: '',
+    hash: '',
+    errorMessage: '',
+    verifyPassword: '',
+    verifyHash: '',
+    verifyResult: undefined,
+    verifyError: ''
+  };
+  res.render('hash-bcrypt', { ...defaultModel, ...data });
+}
+
+// GET
+router.get('/hash-bcrypt', (req, res) => {
+  renderBcrypt(res, {});
+});
+
+// POST generate hash (already shared before)
+router.post('/hash-bcrypt', async (req, res) => {
+  logger.info('Generate bcrypt hash');
+
+  const password = (req.body.password || '').trim();
+  const saltRounds = parseInt(req.body.saltRounds, 10);
+
+  if (!password) {
+    return renderBcrypt(res, {
+      errorMessage: 'Please provide a password.',
+      samplePassword: '',
+      saltRounds
+    });
+  }
+
+  if (isNaN(saltRounds) || saltRounds < 4 || saltRounds > 15) {
+    return renderBcrypt(res, {
+      samplePassword: password,
+      saltRounds,
+      errorMessage: 'Salt rounds must be an integer between 4 and 15.'
+    });
+  }
+
+  try {
+    const salt = await bcrypt.genSalt(saltRounds);
+    const hash = await bcrypt.hash(password, salt);
+
+    renderBcrypt(res, {
+      samplePassword: password,
+      saltRounds,
+      hash
+    });
+  } catch (err) {
+    logger.error('Bcrypt Hash Error: ' + err.message);
+    renderBcrypt(res, {
+      samplePassword: password,
+      saltRounds,
+      errorMessage: 'Failed to generate bcrypt hash.'
+    });
+  }
+});
+
+// POST verify hash
+router.post('/verify-bcrypt', async (req, res) => {
+  logger.info('Verify bcrypt hash');
+
+  const verifyPassword = (req.body.verifyPassword || '').trim();
+  const verifyHash = (req.body.verifyHash || '').trim();
+
+  if (!verifyPassword || !verifyHash) {
+    return renderBcrypt(res, {
+      verifyPassword,
+      verifyHash,
+      verifyError: 'Both password and hash are required.'
+    });
+  }
+
+  try {
+    const isMatch = await bcrypt.compare(verifyPassword, verifyHash);
+
+    // Keep generator fields intact if user used it just before
+    renderBcrypt(res, {
+      verifyPassword,
+      verifyHash,
+      verifyResult: isMatch
+    });
+  } catch (err) {
+    logger.error('Bcrypt Verify Error: ' + err.message);
+    renderBcrypt(res, {
+      verifyPassword,
+      verifyHash,
+      verifyError: 'Invalid hash format or verification failed.'
     });
   }
 });

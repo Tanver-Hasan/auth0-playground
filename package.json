@@ -17,6 +17,7 @@
     "@babel/core": "^7.27.4",
     "@babel/preset-react": "^7.27.1",
     "@babel/register": "^7.27.1",
+    "bcrypt": "^6.0.0",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
     "express": "^4.21.2",

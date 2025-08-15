@@ -95,7 +95,7 @@
 <body>
 
   <div class="container">
-    <h1>Welcome to My App</h1>
+    <h1>Toolbox</h1>
 
     <% if (isAuthenticated) { %>
       <div class="user-info">
@@ -104,6 +104,7 @@
 
       <div class="grid">
         <div class="card"><a href="/profile"><button>View Profile</button></a></div>
+         <div class="card"><a href="/login?ext-manage-profile=true"><button>Hosted Profile</button></a></div>
         <div class="card"><a href="/token"><button>Tokens</button></a></div>
         <div class="card"><a href="/login"><button>Interactive Login</button></a></div>
         <div class="card"><a href="/silent-auth"><button>Silent Auth</button></a></div>
@@ -125,6 +126,8 @@
       <div class="card"><a href="/decode-jwt"><button>JWT Decoder</button></a></div>
       <div class="card"><a href="/decode-saml"><button>SAML Decoder</button></a></div>
       <div class="card"><a href="/base64"><button>Base64 Encoder/Decoder</button></a></div>
+      <div class="card"><a href="/hash-bcrypt"><button>Bcrypt Hash Generate/Verify</button></a></div>
+   
     </div>
 
     <p class="footer-note">Looking for more tools? Submit a feature request to the admin team.</p>

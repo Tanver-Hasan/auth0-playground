@@ -1,4 +1,5 @@
 
+
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 const dotenv = require('dotenv');
 const express = require("express");
@@ -14,10 +15,13 @@ const authRoutes = require("./src/routes/auth/auth");
 const licensAndAgreementRoutes = require("./src/routes/licenseAndAgreement/license_agreement")
 const progressiveProfilingRoutes = require("./src/routes/progressive_profiling/progressive_profiling");
 const eventStreamRoutes = require("./src/routes/event_stream/event_webhook");
-const tools =require("./src/routes/tool/tool");
+const tools = require("./src/routes/tool/tool");
+const React = require("react");
+const ReactDOMServer = require("react-dom/server");
+
 dotenv.config();
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 const app = express();
 app.set('trust proxy', true);
 app.set('view engine', 'ejs');
@@ -37,23 +41,17 @@ app.use(
     })
 );
 
-
 app.use((req, res, next) => {
     res.locals.nonce = crypto.randomBytes(16).toString('base64');
     next();
 });
-
 
 app.use(
     helmet({
         contentSecurityPolicy: {
             directives: {
                 defaultSrc: ["'self'"],
-                // Allow inline scripts only if they have the correct nonce
-                scriptSrc: [
-                    "'self'",
-                    (req, res) => `'nonce-${res.locals.nonce}'`
-                ],
+                scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.nonce}'`],
                 formAction: ["'self'", `https://${process.env.AUTH0_DOMAIN}`]
             }
         }
@@ -66,14 +64,11 @@ app.use((req, res, next) => {
 });
 
 app.use(auth({
-    idpLogout: false,
     authRequired: false,
     routes: {
         login: false,
-        postLogoutRedirect: 'custom-logout',
         callback: false
     },
-
     baseURL: process.env.BASE_URL,
     clientID: process.env.AUTH0_CLIENT_ID,
     clientSecret: process.env.AUTH0_CLIENT_SECRET,
@@ -82,18 +77,16 @@ app.use(auth({
     authorizationParams: {
         response_type: 'code',
         audience: process.env.API_AUDIENCE,
-        scope: 'openid profile email offline_access',
+        scope: 'openid profile email offline_access'
     },
-
     session: {
         store: new MemoryStore({
             checkPeriod: 24 * 60 * 1000
         })
     },
+    auth0Logout: true,
     backchannelLogout: true
 }));
-
-
 
 // Home Page
 app.get('/', (req, res) => {
@@ -103,6 +96,21 @@ app.get('/', (req, res) => {
         user: req.oidc.user
     });
 })
+
+// Server-rendered React Base64 Tool Page
+app.get('/base64-tool', (req, res) => {
+    const html = ReactDOMServer.renderToStaticMarkup(
+        React.createElement(Base64Tool, {
+            encodeInput: '',
+            encodedResult: '',
+            sampleEncoded: '',
+            decodedData: '',
+            errorMessage: '',
+            encodeError: ''
+        })
+    );
+    res.send('<!DOCTYPE html>' + html);
+});
 
 app.use("/", authRoutes);
 app.use("/", licensAndAgreementRoutes);
@@ -124,8 +132,6 @@ app.get('/profile', requiresAuth(), (req, res) => {
     res.render('Profile', { user: req.oidc.user })
 });
 
-
-
 // Catch 404 and forward to error handler
 app.use(function (req, res, next) {
     const err = new Error('Not Found');
@@ -133,9 +139,7 @@ app.use(function (req, res, next) {
     next(err);
 });
 
-// error handlers
 // development error handler
-// will print stacktrace
 if (app.get("env") === "development") {
     app.use((err, req, res) => {
         logger.error(`Error occurred: ${err.message}`);
@@ -148,7 +152,6 @@ if (app.get("env") === "development") {
 }
 
 // production error handler
-// no stacktraces leaked to user
 app.use((err, req, res) => {
     logger.error(`Error occurred: ${err.message}`);
     res.status(err.status || 500);
@@ -161,19 +164,15 @@ app.use((err, req, res) => {
 const isDevelopment = process.env.NODE_ENV === "development";
 const isLocal = !process.env.VERCEL && process.env.NODE_ENV === "development";
 if (isLocal) {
-    // Load SSL Certificates (For Development Only)
     const https = require("https");
     const options = {
         key: fs.readFileSync("server.key"),
         cert: fs.readFileSync("server.cert"),
     };
-
-    // Start Express with HTTPS
     https.createServer(options, app).listen(port, () => {
         logger.info(`[Development] HTTPS Server running at https://localhost:${port}`);
     });
 } else {
-    //Start Express with HTTP
     app.listen(port, () => {
         logger.info(`[Production] HTTP Server Statrted`);
     });
